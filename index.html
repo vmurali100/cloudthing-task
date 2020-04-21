@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      #main {
+        width: 1200px;
+        margin: 0 auto;
+      }
+      .item {
+        margin: 20px auto;
+        overflow: auto;
+      }
+      .thumbnail {
+        width: 150px;
+        float: left;
+        clear: both;
+      }
+      div#inputArea {
+        width: 230px;
+        margin: 0 auto;
+        text-align: center;
+      }
+      h3 {
+        margin-left: 20px;
+        float: left;
+        width: 80%;
+      }
+      .item {
+        margin: 20px auto;
+        overflow: auto;
+        border: 1px solid grey;
+        padding: 5px;
+      }
+      li {
+        display: inline-block;
+        margin: 2px;
+        border: 1px solid gray;
+        padding: 3px;
+        cursor: pointer;
+      }
+      ul.myUl {
+        float: left;
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="main">
+      <div id="inputArea">
+        <h2>News Lister</h2>
+        <input type="text" id="myInput" />
+        <button id="search" disabled>Search</button>
+      </div>
+      <div id="results"></div>
+      <ul id="pages"></ul>
+      <script>
+        //API link
+        let url = "http://content.guardianapis.com/search?api-key=test&q=";
+        //http://content.guardianapis.com/search?api-key=test&q=sachin&show-fields=thumbnail,headline&page=1&page-size=50
+        let tagsUrl =
+          "http://content.guardianapis.com/search?api-key=test&q=modi&show-fields=thumbnail,headline&show-tags=keyword&page-size=10";
+        function Task() {
+          this.data = [];
+          this.tags = [];
+          this.pageSize = 10;
+          this.pageNo = 1;
+          this.inputValue = "";
+
+          this.getInfo = function () {
+            fetch(
+              `${
+                url + this.inputValue
+              }&show-fields=thumbnail,headline&show-tags=keyword&page=${
+                this.pageNo
+              }&page-size=${this.pageSize}`
+            )
+              .then((res) => {
+                return res.json();
+              })
+              .then((data) => {
+                let mainData = data.response.results;
+                console.log(mainData);
+                if (mainData.length > 0) {
+                  this.displayResults(mainData);
+                } else {
+                  document.getElementById("results").innerHTML =
+                    "<h2>No Data Available</h2>";
+                }
+              });
+          };
+          this.showPages = function () {
+            for (i = 1; i < 10; i++) {
+              var li = document.createElement("li");
+              li.setAttribute("onclick", "goToPage(event)");
+              li.setAttribute("id", i);
+              if (i == 1) {
+                li.innerHTML = "Next";
+              } else if (i == 9) {
+                li.innerHTML = "Prev";
+              } else {
+                li.innerHTML = i;
+              }
+              document.getElementById("pages").appendChild(li);
+            }
+          };
+          this.displayResults = function (data) {
+            document.getElementById("results").innerHTML = "";
+            data.map((obj) => {
+              console.log(obj);
+              var childDiv = document.createElement("div");
+              childDiv.setAttribute("class", "item");
+              //Adding Image
+              var img = document.createElement("img");
+              img.setAttribute("class", "thumbnail");
+              img.setAttribute("src", obj.fields.thumbnail);
+
+              //adding Anchor
+              var anch = document.createElement("a");
+              anch.setAttribute("href", obj.webUrl);
+              anch.setAttribute("target", "_blank");
+              anch.appendChild(img);
+
+              //   Adding Tags
+              var ul = document.createElement("ul");
+              obj.tags.map((tag) => {
+                console.log(tag);
+                var li = document.createElement("li");
+                li.innerHTML = tag.sectionName;
+                ul.appendChild(li);
+                li.setAttribute("onclick", "getAllDetails(event)");
+              });
+              ul.setAttribute("class", "myUl");
+
+              var title = document.createElement("h3");
+              title.innerHTML = obj.fields.headline;
+              childDiv.appendChild(anch);
+              childDiv.appendChild(title);
+              childDiv.appendChild(ul);
+
+              document.getElementById("results").appendChild(childDiv);
+            });
+          };
+        }
+
+        var task1 = new Task();
+        document.getElementById("myInput").onkeyup = function () {
+          if (document.getElementById("myInput").value.length > 0) {
+            document.getElementById("search").removeAttribute("disabled");
+          } else {
+            document.getElementById("search").setAttribute("disabled", true);
+          }
+        };
+        document.getElementById("search").onclick = function () {
+          task1.inputValue = document.getElementById("myInput").value;
+          task1.getInfo();
+        };
+        task1.getInfo("modi");
+        task1.showPages();
+        var lis = document.getElementsByTagName("lis");
+        for (i = 0; i < lis.length; i++) {
+          lis[i].addEventListener("click", getAllDetails);
+        }
+
+        function getAllDetails(event) {
+          console.log();
+          task1.getInfo(event.target.innerHTML);
+        }
+
+        function goToPage(event) {
+          if (event.target.innerHTML == "Next") {
+            task1.pageNo++;
+          } else if (event.target.innerHTML == "Prev") {
+            task1.pageNo--;
+          } else {
+            task1.pageNo = event.target.innerHTML;
+          }
+          task1.getInfo();
+        }
+      </script>
+    </div>
+  </body>
+</html>
